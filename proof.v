@@ -65,15 +65,13 @@ Inductive Card : Type :=
   | Phoenix
   | Dog
   | MahJong
-  | Dragon
-  | None.
+  | Dragon.
 
 Inductive Color : Type :=
   | Blue
   | Red
   | Green
-  | Black
-  | Unknown.
+  | Black.
 
 (*** DEFINITIONS ***)
 
@@ -105,31 +103,33 @@ Definition place (a: Player): nat :=
   | Adam    | Cezary  => 5
   end.
 
-Definition straight (a: Player): nat :=
+(* We define straights, special cards and colors in the option monad.
+   This way we avoid partial functions. *)
+Definition straight (a: Player): option nat :=
   match a with
-  | Sonia   => 2
-  | Hubert  => 3
-  | Urszula => 4
-  | Eliza   => 5
-  | _       => 0 (* TODO: Refactor *)
-  end.
-
-Definition special (a: Player): Card :=
-  match a with
-  | Sonia   => Phoenix
-  | Hubert  => Dog
-  | Urszula => Dragon
-  | Eliza   => MahJong
+  | Sonia   => Some 2
+  | Hubert  => Some 3
+  | Urszula => Some 4
+  | Eliza   => Some 5
   | _       => None
   end.
 
-Definition color (a: Player): Color :=
+Definition special (a: Player): option Card :=
   match a with
-  | Sonia   => Blue
-  | Hubert  => Red
-  | Urszula => Green
-  | Eliza   => Black
-  | _       => Unknown
+  | Sonia   => Some Phoenix
+  | Hubert  => Some Dog
+  | Urszula => Some Dragon
+  | Eliza   => Some MahJong
+  | _       => None
+  end.
+
+Definition color (a: Player): option Color :=
+  match a with
+  | Sonia   => Some Blue
+  | Hubert  => Some Red
+  | Urszula => Some Green
+  | Eliza   => Some Black
+  | _       => None
   end.
 
 (* We define a symmetric predicate for pairs. *)
@@ -156,6 +156,15 @@ Qed.
 
 (*** PROOFS FOR THE PUZZLE RULES ***)
 
+(* Let's introduce some notation for comparing values in the option monad. *)
+Notation "A '=S=' S" := (A = Some S)
+(at level 70, no associativity).
+
+(* When we say that someone's special card is not a Dragon, 
+   we also assume that they do have some other special card. *)
+Notation "A '<S>' S" := (A <> Some S /\ A <> None)
+(at level 70, no associativity).
+
 (* Rule 1: Mateusz and Irena are paired, and they are neither 3rd nor 5th. *)
 Fact rule1: pair Mateusz Irena /\ place Mateusz <> 3 /\ place Irena <> 5.
 Proof.
@@ -168,7 +177,7 @@ Proof.
 Qed.
 
 (* Rule 2.1: The straight of the only man in the final didn't start with 4. *)
-Fact rule21: exists! p: Player, finalist p /\ man p /\ straight p <> 4.
+Fact rule21: exists! p: Player, finalist p /\ man p /\ straight p <S> 4.
 Proof.
   exists Hubert.
   unfold unique.
@@ -181,7 +190,7 @@ Proof.
         * unfold man.
           tauto.
         * unfold straight.
-          auto.
+          split; intro C; inversion C.
     - intros x H.
       destruct H.
       destruct H0.
@@ -189,12 +198,12 @@ Proof.
 Qed.
 
 (* Rule 2.2: The straight of the owner of the Phoenix card didn't start with 4. *)
-Fact rule22: forall p: Player, special p = Phoenix -> straight p <> 4.
+Fact rule22: forall p: Player, special p =S= Phoenix -> straight p <S> 4.
 Proof.
   intros.
   replace p with Sonia.
   - unfold straight.
-    auto.
+    split; intros C; inversion C.
   - destruct p; unfold special in H; try discriminate.
     tauto.
 Qed.
@@ -206,7 +215,7 @@ Proof.
 Qed.
 
 (* Rule 4: In the winning mixed pair it was Eliza who had the Mah Jong, and their straights were blue. *)
-Fact rule4: forall a: Player, pair a Eliza -> place a = 1 /\ man a /\ special Eliza = MahJong /\ color Eliza <> Blue /\ color a <> Blue.
+Fact rule4: forall a: Player, pair a Eliza -> place a = 1 /\ man a /\ special Eliza =S= MahJong /\ color Eliza <S> Blue /\ color a <S> Blue.
 Proof.
   intros.
   replace a with Hubert.
@@ -218,7 +227,7 @@ Proof.
 Qed.
 
 (* Rule 5: The lowest straight was neither green nor red. *)
-Fact rule5: forall p: Player, straight p = 2 -> color p <> Green /\ color p <> Red.
+Fact rule5: forall p: Player, straight p =S= 2 -> color p <S> Green /\ color p <S> Red.
 Proof.
   intros.
   destruct p; unfold straight in H; try discriminate.
@@ -235,7 +244,7 @@ Proof.
 Qed.
 
 (* Rule 7.1: The highest straight was black. *)
-Fact rule71: forall p: Player, straight p = 5 -> color p = Black.
+Fact rule71: forall p: Player, straight p =S= 5 -> color p =S= Black.
 Proof.
   intros.
   destruct p; unfold straight in H; try discriminate.
@@ -243,7 +252,7 @@ Proof.
 Qed.
 
 (* Rule 7.2: The person with the red straight had the Dog card. *)
-Fact rule72: forall p: Player, color p = Red -> special p = Dog.
+Fact rule72: forall p: Player, color p =S= Red -> special p =S= Dog.
 Proof.
   intros.
   destruct p; unfold color in H; try discriminate.
@@ -251,7 +260,7 @@ Proof.
 Qed.
 
 (* Rule 7.3: Urszula was a runner-up and her straight was green. *)
-Fact rule73: place Urszula = 2 /\ color Urszula = Green.
+Fact rule73: place Urszula = 2 /\ color Urszula =S= Green.
 Proof.
   auto.
 Qed.
