@@ -1,5 +1,50 @@
 Require Import Coq.Arith.PeanoNat.
 
+Section Puzzle.
+
+(*** INTRODUCTION ***)
+
+(* We obtained a potential answer to the puzzle using Prolog.
+   In this section, we will prove that if all rules hold for this
+   result, then it must be the correct solution, as we assume
+   the puzzle only has one. *)
+
+(* S is a type of possible answers to the puzzle. *)
+Variable S: Type.
+
+(* A rule is a predicate on S. It is true if S satisfies the rule. *)
+Definition Rule := S -> Prop.
+
+(* 's' is a solution iff it satisfies all rules. *)
+Definition solution (s: S) := forall r: Rule, r s.
+
+(* We assume that there exists only one solution to the puzzle. *)
+Axiom only_one_solution: exists! s: S, solution s.
+
+(* If we find any solution, then it's the only one. *)
+Lemma rules_sufficient: forall s: S, solution s -> ~ exists s2: S, solution s2 /\ s <> s2.
+Proof.
+  intros.
+  unfold not at 1.
+  intro C.
+  inversion C as [x P].
+  destruct P as [H1 N].
+  pose proof only_one_solution as O.
+  destruct O as [u U].
+  unfold unique in U.
+  destruct U as [SU EU].
+  cut (u = s /\ u = x).
+  + intros.
+    destruct H0 as [US UX].
+    rewrite -> US in UX.
+    contradiction.
+  + split; apply EU; assumption.
+Qed.
+
+End Puzzle.
+
+(* We can now attempt to prove that our solution is in fact correct. *)
+
 Section Tichu.
 
 (*** DATA TYPES ***)
@@ -95,14 +140,14 @@ Definition finalist (a:Player) := place a <= 2.
 
 (*** SANITY CHECKS ***)
 
-Lemma cannot_be_paired_with_self: forall a: Player, ~ pair a a.
+Fact cannot_be_paired_with_self: forall a: Player, ~ pair a a.
 Proof.
   intros.
   destruct a; unfold pair; unfold known_pair; intuition; auto.
 Qed.
 
 (* Prove that both players in a pair have the same place. *)
-Lemma places_valid: forall p q : Player, pair p q -> place p = place q.
+Fact places_valid: forall p q : Player, pair p q -> place p = place q.
 Proof.
   intros.
   unfold place.
@@ -112,7 +157,7 @@ Qed.
 (*** PROOFS FOR THE PUZZLE RULES ***)
 
 (* Rule 1: Mateusz and Irena are paired, and they are neither 3rd nor 5th. *)
-Lemma rule1: pair Mateusz Irena /\ place Mateusz <> 3 /\ place Irena <> 5.
+Fact rule1: pair Mateusz Irena /\ place Mateusz <> 3 /\ place Irena <> 5.
 Proof.
   split.
   - unfold pair.
@@ -123,7 +168,7 @@ Proof.
 Qed.
 
 (* Rule 2.1: The straight of the only man in the final didn't start with 4. *)
-Lemma rule21: exists! p: Player, finalist p /\ man p /\ straight p <> 4.
+Fact rule21: exists! p: Player, finalist p /\ man p /\ straight p <> 4.
 Proof.
   exists Hubert.
   unfold unique.
@@ -144,7 +189,7 @@ Proof.
 Qed.
 
 (* Rule 2.2: The straight of the owner of the Phoenix card didn't start with 4. *)
-Lemma rule22: forall p: Player, special p = Phoenix -> straight p <> 4.
+Fact rule22: forall p: Player, special p = Phoenix -> straight p <> 4.
 Proof.
   intros.
   replace p with Sonia.
@@ -154,15 +199,14 @@ Proof.
     tauto.
 Qed.
 
-
 (* Rule 3: Natalia finished higher than Cezary and Sonia - higher than Tadeusz. *)
-Lemma rule3: place Natalia < place Cezary /\ place Sonia < place Tadeusz.
+Fact rule3: place Natalia < place Cezary /\ place Sonia < place Tadeusz.
 Proof.
   split; unfold place; auto.
 Qed.
 
 (* Rule 4: In the winning mixed pair it was Eliza who had the Mah Jong, and their straights were blue. *)
-Lemma rule4: forall a: Player, pair a Eliza -> place a = 1 /\ man a /\ special Eliza = MahJong /\ color Eliza <> Blue /\ color a <> Blue.
+Fact rule4: forall a: Player, pair a Eliza -> place a = 1 /\ man a /\ special Eliza = MahJong /\ color Eliza <> Blue /\ color a <> Blue.
 Proof.
   intros.
   replace a with Hubert.
@@ -174,7 +218,7 @@ Proof.
 Qed.
 
 (* Rule 5: The lowest straight was neither green nor red. *)
-Lemma rule5: forall p: Player, straight p = 2 -> color p <> Green /\ color p <> Red.
+Fact rule5: forall p: Player, straight p = 2 -> color p <> Green /\ color p <> Red.
 Proof.
   intros.
   destruct p; unfold straight in H; try discriminate.
@@ -182,7 +226,7 @@ Proof.
 Qed.
 
 (* Rule 6: Tadeusz was paired with a woman. Adam was paired with a man. *)
-Lemma rule6: forall p: Player, (pair Tadeusz p -> woman p) /\ (pair Adam p -> man p).
+Fact rule6: forall p: Player, (pair Tadeusz p -> woman p) /\ (pair Adam p -> man p).
 Proof.
   intros.
   split; intro; destruct p; unfold pair in H; unfold known_pair in H; intuition.
@@ -191,7 +235,7 @@ Proof.
 Qed.
 
 (* Rule 7.1: The highest straight was black. *)
-Lemma rule71: forall p: Player, straight p = 5 -> color p = Black.
+Fact rule71: forall p: Player, straight p = 5 -> color p = Black.
 Proof.
   intros.
   destruct p; unfold straight in H; try discriminate.
@@ -199,7 +243,7 @@ Proof.
 Qed.
 
 (* Rule 7.2: The person with the red straight had the Dog card. *)
-Lemma rule72: forall p: Player, color p = Red -> special p = Dog.
+Fact rule72: forall p: Player, color p = Red -> special p = Dog.
 Proof.
   intros.
   destruct p; unfold color in H; try discriminate.
@@ -207,7 +251,7 @@ Proof.
 Qed.
 
 (* Rule 7.3: Urszula was a runner-up and her straight was green. *)
-Lemma rule73: place Urszula = 2 /\ color Urszula = Green.
+Fact rule73: place Urszula = 2 /\ color Urszula = Green.
 Proof.
   auto.
 Qed.
