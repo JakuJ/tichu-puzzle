@@ -43,48 +43,48 @@ Definition woman (A: Player) : Prop := ~ man A.
      and will thereby attempt to prove. ***)
 Definition known_pair (a: Player) (b: Player): Prop :=
   match (a, b) with
-  | (Adam, Cezary) => True
-  | (Hubert, Eliza) => True
-  | (Urszula, Sonia) => True
-  | (Tadeusz, Natalia) => True
-  | (Mateusz, Irena) => True
+  | (Adam, Cezary)      => True
+  | (Hubert, Eliza)     => True
+  | (Urszula, Sonia)    => True
+  | (Tadeusz, Natalia)  => True
+  | (Mateusz, Irena)    => True
   | _ => False
   end.
 
 Definition place (a: Player): nat :=
   match a with
-  | Adam | Cezary => 5
-  | Hubert | Eliza  => 1
-  | Urszula | Sonia => 2
+  | Hubert  | Eliza   => 1
+  | Urszula | Sonia   => 2
   | Natalia | Tadeusz => 3
-  | Irena | Mateusz => 4
+  | Irena   | Mateusz => 4
+  | Adam    | Cezary  => 5
   end.
 
 Definition straight (a: Player): nat :=
   match a with
-  | Sonia => 2
-  | Hubert => 3
+  | Sonia   => 2
+  | Hubert  => 3
   | Urszula => 4
-  | Eliza => 5
-  | _ => 0 (* TODO: Refactor *)
+  | Eliza   => 5
+  | _       => 0 (* TODO: Refactor *)
   end.
 
 Definition special (a: Player): Card :=
   match a with
-  | Sonia => Phoenix
-  | Hubert => Dog
+  | Sonia   => Phoenix
+  | Hubert  => Dog
   | Urszula => Dragon
-  | Eliza => MahJong
-  | _ => None (* TODO: Refactor *)
+  | Eliza   => MahJong
+  | _       => None
   end.
 
 Definition color (a: Player): Color :=
   match a with
-  | Sonia => Blue
-  | Hubert => Red
+  | Sonia   => Blue
+  | Hubert  => Red
   | Urszula => Green
-  | Eliza => Black
-  | _ => Unknown (* TODO: Refactor *)
+  | Eliza   => Black
+  | _       => Unknown
   end.
 
 (* We define a symmetric predicate for pairs. *)
@@ -155,7 +155,7 @@ Proof.
 Qed.
 
 
-(* Rule 3: Natalia finished higher than Cezary and Sonia \u2013 higher than Tadeusz. *)
+(* Rule 3: Natalia finished higher than Cezary and Sonia - higher than Tadeusz. *)
 Lemma rule3: place Natalia < place Cezary /\ place Sonia < place Tadeusz.
 Proof.
   split; unfold place; auto.
